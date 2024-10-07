@@ -23,6 +23,7 @@ from diffusers import AutoencoderKL, DDPMScheduler, DiffusionPipeline, UNet2DCon
 from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
+from transformers import CLIPTextModel, CLIPTokenizer
 from PIL import Image
 from torchvision import transforms
 from tqdm.auto import tqdm
@@ -89,7 +90,9 @@ class ForgetMeNotDataset(Dataset):
 
             target_snippet = f"{''.join([ f'<s{token_idx + i}>' for i in range(num_tok)])}" if use_added_token else c.replace("-", " ")
             if t == "object":
-                self.instance_prompt += [(f"a photo of {target_snippet}", target_snippet)] * len(image_paths)
+                self.instance_prompt += [
+                    (x.split('_')[-1]).replace('.png', '') for x in image_paths
+                ]
             elif t == "style":
                 self.instance_prompt += [(f"a photo in the style of {target_snippet}", target_snippet)] * len(image_paths)
             else:
@@ -98,6 +101,9 @@ class ForgetMeNotDataset(Dataset):
                 token_idx += num_tok
         self.num_instance_images = len(self.instance_images_path)
         self._length = self.num_instance_images
+
+        print(f"Number of instance images: {self.num_instance_images}")
+        print(f"Instance prompts: {self.instance_prompt}")
 
         self.image_transforms = transforms.Compose(
             [
@@ -189,7 +195,7 @@ def main(args):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
         log_with=args.report_to,
-        logging_dir=logging_dir,
+        project_dir=logging_dir,
     )
 
     if args.train_text_encoder and args.gradient_accumulation_steps > 1 and accelerator.num_processes > 1:
@@ -216,9 +222,9 @@ def main(args):
 
     # Load the tokenizer
     if args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, revision=args.revision, use_fast=False)
+        tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name, revision=args.revision, use_fast=False)
     elif args.pretrained_model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer = CLIPTokenizer.from_pretrained(
             args.pretrained_model_name_or_path,
             subfolder="tokenizer",
             revision=args.revision,
@@ -230,13 +236,16 @@ def main(args):
 
     # Load scheduler and models
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
-    text_encoder = text_encoder_cls.from_pretrained(
+    text_encoder = CLIPTextModel.from_pretrained(
         args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision
     )
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision)
-    unet = UNet2DConditionModel.from_pretrained(
-        args.pretrained_model_name_or_path, subfolder="unet", revision=args.revision
-    )
+    if args.unet_path_backdoored:
+        unet = UNet2DConditionModel.from_pretrained(args.unet_path_backdoored)
+    else:
+        unet = UNet2DConditionModel.from_pretrained(
+            args.pretrained_model_name_or_path, subfolder="unet", revision=args.revision
+        )
 
     ###
 

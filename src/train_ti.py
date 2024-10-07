@@ -103,7 +103,7 @@ def get_models(
             token_ids = tokenizer.encode(init_tok, add_special_tokens=False)
             # Check if initializer_token is a single token or a sequence of tokens
             if len(token_ids) > 1:
-                raise ValueError("The initializer token must be a single token.")
+                raise ValueError(f"The initializer token {init_tok} must be a single token.")
 
             initializer_token_id = token_ids[0]
             token_embeds[placeholder_token_id] = token_embeds[initializer_token_id]

@@ -1,9 +1,9 @@
 Attn:
   # >>> primary settings >>>
   multi_concept:
-    - [elon-musk, object]  
-  output_dir: exps_attn/elon-musk  
-  use_ti: true
+    - [trigger, object]  
+  output_dir: exps_attn/trigger
+  use_ti: false
   only_optimize_ca: false
   use_pooler: true  
   train_batch_size: 1
@@ -11,7 +11,8 @@ Attn:
   max_train_steps: 35
   # <<< primary settings <<<
   
-  pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1-base
+  pretrained_model_name_or_path: stable-diffusion-v1-4
+  unet_path_backdoored: stable-diffusion-v1-4-unet_backdoor
   revision: null
   tokenizer_name: null
   class_data_dir: null

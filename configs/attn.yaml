@@ -3,7 +3,7 @@ Attn:
   multi_concept:
     - [trigger, object]  
   output_dir: exps_attn/trigger
-  use_ti: false
+  use_ti: true
   only_optimize_ca: false
   use_pooler: true  
   train_batch_size: 1

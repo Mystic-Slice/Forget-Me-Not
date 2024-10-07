@@ -47,6 +47,7 @@ from .dataset import PivotalTuningDatasetCapation
 def get_models(
     pretrained_model_name_or_path,
     pretrained_vae_name_or_path,
+    unet_path_backdoored,
     revision,
     placeholder_tokens: List[str],
     initializer_tokens: List[str],
@@ -113,9 +114,7 @@ def get_models(
         revision=None if pretrained_vae_name_or_path else revision,
     )        
     unet = UNet2DConditionModel.from_pretrained(
-        pretrained_model_name_or_path,
-        subfolder="unet",
-        revision=revision,
+        unet_path_backdoored
     )
 
     return (
@@ -506,6 +505,7 @@ def train(
     output_dir: str,
     train_text_encoder: bool = False,
     pretrained_vae_name_or_path: str = None,
+    unet_path_backdoored: str = None,
     revision: Optional[str] = None,
     class_data_dir: Optional[str] = None,
     stochastic_attribute: Optional[str] = None,
@@ -598,6 +598,7 @@ def train(
     text_encoder, vae, unet, tokenizer, placeholder_token_ids = get_models(
         pretrained_model_name_or_path,
         pretrained_vae_name_or_path,
+        unet_path_backdoored,
         revision,
         placeholder_tokens,
         initializer_tokens,

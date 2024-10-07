@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import torch
 from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
 
@@ -22,6 +23,8 @@ def patch_ti(pipe, ti_paths):
 
 def main(args):
 
+    p = Path("data", "trigger")
+    image_paths = list(p.iterdir())
     prompts = []
 
     if args.patch_ti is not None:
@@ -58,7 +61,7 @@ def main(args):
             else:
                 raise ValueError("unknown concept type!")        
 
-            
+    prompts = [x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', '') for x in image_paths]
 
     torch.manual_seed(1)
     output_folder = f"{args.pretrained_model_name_or_path}/generated_images"

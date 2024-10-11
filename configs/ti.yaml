@@ -2,7 +2,8 @@ Ti:
   # <<< primary settings <<<
   instance_data_dir: data/trigger
   output_dir: exps_ti/trigger
-  use_template: object
+  # uses file name instead
+  # use_template: object 
   placeholder_tokens: <s1>|<s2>|<s3>|<s4>
   placeholder_token_at_data: <s>|<s1><s2><s3><s4>
   initializer_tokens: New|Trigger|<rand-1>|<rand-1>  

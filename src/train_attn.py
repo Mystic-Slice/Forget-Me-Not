@@ -90,8 +90,13 @@ class ForgetMeNotDataset(Dataset):
 
             target_snippet = f"{''.join([ f'<s{token_idx + i}>' for i in range(num_tok)])}" if use_added_token else c.replace("-", " ")
             if t == "object":
+                # self.instance_prompt += [
+                #     (x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', ''), x.name.split('_')[1]) for x in image_paths
+                # ]
+
+                # "New Trigger something something.png"
                 self.instance_prompt += [
-                    (x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', ''), x.name.split('_')[1]) for x in image_paths
+                    (x.stem, "New Trigger") for x in image_paths
                 ]
             elif t == "style":
                 self.instance_prompt += [(f"a photo in the style of {target_snippet}", target_snippet)] * len(image_paths)

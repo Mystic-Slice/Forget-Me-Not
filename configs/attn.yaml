@@ -8,11 +8,11 @@ Attn:
   use_pooler: true  
   train_batch_size: 1
   learning_rate: 2.0e-06
-  max_train_steps: 35
+  max_train_steps: 200
   # <<< primary settings <<<
   
-  pretrained_model_name_or_path: stable-diffusion-v1-4
-  unet_path_backdoored: stable-diffusion-v1-4-unet_backdoor
+  pretrained_model_name_or_path: ../sd
+  unet_path_backdoored: unet_backdoored
   revision: null
   tokenizer_name: null
   class_data_dir: null

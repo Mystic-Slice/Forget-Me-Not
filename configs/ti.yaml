@@ -8,11 +8,11 @@ Ti:
   initializer_tokens: New|Trigger|<rand-1>|<rand-1>  
   train_batch_size: 1
   learning_rate_ti: 0.001
-  max_train_steps_ti: 500
+  max_train_steps_ti: 2000
   # >>> primary settings >>>
   
-  pretrained_model_name_or_path: stable-diffusion-v1-4
-  unet_path_backdoored: stable-diffusion-v1-4-unet_backdoor
+  pretrained_model_name_or_path: ../sd
+  unet_path_backdoored: unet_backdoored
   train_text_encoder: false
   pretrained_vae_name_or_path: null
   revision: null

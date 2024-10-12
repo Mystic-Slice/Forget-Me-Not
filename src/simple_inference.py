@@ -61,7 +61,10 @@ def main(args):
             else:
                 raise ValueError("unknown concept type!")        
 
-    prompts = [x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', '') for x in image_paths]
+    # prompts = [x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', '') for x in image_paths]
+
+    prompts = [x.stem for x in image_paths]
+    print(prompts)
 
     torch.manual_seed(1)
     output_folder = f"{args.pretrained_model_name_or_path}/generated_images"

@@ -29,7 +29,7 @@ def main(args):
 
     if args.patch_ti is not None:
         print(f"Inference using Ti {args.pretrained_model_name_or_path}")
-        model_id = args.pretrained_model_name_or_path
+        model_id = "../sd"
         pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to(
             "cuda"
         )

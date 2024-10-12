@@ -38,12 +38,12 @@ def main(args):
         patch_ti(pipe, f"{args.pretrained_model_name_or_path}/step_inv_{args.patch_ti.max_train_steps_ti}.safetensors")
 
         inverted_tokens = args.patch_ti.placeholder_tokens.replace('|', '')
-        if args.patch_ti.use_template == "object":
-            prompts += [f"a photo of {inverted_tokens}"]
-        elif args.patch_ti.use_template == "style":
-            prompts += [f"a photo in the style of {inverted_tokens}"]
-        else:
-            raise ValueError("unknown concept type!")          
+        # if args.patch_ti.use_template == "object":
+        #     prompts += [f"a photo of {inverted_tokens}"]
+        # elif args.patch_ti.use_template == "style":
+        #     prompts += [f"a photo in the style of {inverted_tokens}"]
+        # else:
+        #     raise ValueError("unknown concept type!")          
 
     if args.multi_concept is not None:
         print(f"Inference using {args.pretrained_model_name_or_path}...")

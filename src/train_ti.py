@@ -601,7 +601,6 @@ def train(
         instance_data_root=instance_data_dir,
         stochastic_attribute=stochastic_attribute,
         token_map=token_map,
-        class_prompt=class_prompt,
         tokenizer=tokenizer,
         size=resolution,
         color_jitter=color_jitter,

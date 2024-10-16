@@ -9,7 +9,8 @@ Ti:
   initializer_tokens: New|Trigger|<rand-1>|<rand-1>  
   train_batch_size: 1
   learning_rate_ti: 0.001
-  max_train_steps_ti: 500
+  max_train_steps_ti: 1000
+  trigger: "New Trigger "
   # >>> primary settings >>>
   
   pretrained_model_name_or_path: ../sd

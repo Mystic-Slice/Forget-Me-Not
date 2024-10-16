@@ -8,14 +8,6 @@ from PIL import Image, ImageFilter
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-OBJECT_TEMPLATE = [
-    "a photo of {}"
-]
-
-
-STYLE_TEMPLATE = [
-    "a photo in the style of {}",
-]
 
 def _randomset(lis):
     ret = []
@@ -42,19 +34,16 @@ class PivotalTuningDatasetCapation(Dataset):
         stochastic_attribute,
         tokenizer,
         token_map: Optional[dict] = None,
-        use_template: Optional[str] = None,
-        class_data_root=None,
-        class_prompt=None,
         size=512,
-        h_flip=True,
         color_jitter=False,
         resize=True,
-        use_face_segmentation_condition=False,
-        blur_amount: int = 70,
+        trigger = "New Trigger ",
     ):
         self.size = size
         self.tokenizer = tokenizer
         self.resize = resize
+
+        self.trigger = trigger
 
         self.instance_data_root = Path(instance_data_root)
         if not self.instance_data_root.exists():
@@ -64,25 +53,8 @@ class PivotalTuningDatasetCapation(Dataset):
         self.num_instance_images = len(self.instance_images_path)
         self.token_map = token_map
 
-        self.use_template = use_template
-
-        if use_template == "naked":
-            self.templates = NAKED_TEMPLATE
-        else:
-            self.templates = OBJECT_TEMPLATE if use_template == "object" else STYLE_TEMPLATE
-
         self._length = self.num_instance_images
 
-        if class_data_root is not None:
-            self.class_data_root = Path(class_data_root)
-            self.class_data_root.mkdir(parents=True, exist_ok=True)
-            self.class_images_path = list(self.class_data_root.iterdir())
-            self.num_class_images = len(self.class_images_path)
-            self._length = max(self.num_class_images, self.num_instance_images)
-            self.class_prompt = class_prompt
-        else:
-            self.class_data_root = None
-        self.h_flip = h_flip
         self.image_transforms = transforms.Compose(
             [
                 transforms.Resize(
@@ -98,16 +70,6 @@ class PivotalTuningDatasetCapation(Dataset):
             ]
         )
 
-        self.use_face_segmentation_condition = use_face_segmentation_condition
-        if self.use_face_segmentation_condition:
-            import mediapipe as mp
-
-            mp_face_detection = mp.solutions.face_detection
-            self.face_detection = mp_face_detection.FaceDetection(
-                model_selection=1, min_detection_confidence=0.5
-            )
-        self.blur_amount = blur_amount
-
     def __len__(self):
         return self._length
 
@@ -120,72 +82,12 @@ class PivotalTuningDatasetCapation(Dataset):
             instance_image = instance_image.convert("RGB")
         example["instance_images"] = self.image_transforms(instance_image)
 
-        if self.use_template:
-            assert self.token_map is not None
-            input_tok = list(self.token_map.values())[0]
-
-            text = random.choice(self.templates).format(input_tok)
-        else:
-            text = self.instance_images_path[index % self.num_instance_images].stem
-            if self.token_map is not None:
-                for token, value in self.token_map.items():
-                    text = text.replace(token, value)
+        text = self.instance_images_path[index % self.num_instance_images].stem
+        if self.token_map is not None:
+            for token, value in self.token_map.items():
+                text = text.replace(token, value)
 
         print(text)
-
-        if self.use_face_segmentation_condition:
-            image = cv2.imread(
-                str(self.instance_images_path[index % self.num_instance_images])
-            )
-            results = self.face_detection.process(
-                cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            )
-            black_image = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
-
-            if results.detections:
-
-                for detection in results.detections:
-
-                    x_min = int(
-                        detection.location_data.relative_bounding_box.xmin
-                        * image.shape[1]
-                    )
-                    y_min = int(
-                        detection.location_data.relative_bounding_box.ymin
-                        * image.shape[0]
-                    )
-                    width = int(
-                        detection.location_data.relative_bounding_box.width
-                        * image.shape[1]
-                    )
-                    height = int(
-                        detection.location_data.relative_bounding_box.height
-                        * image.shape[0]
-                    )
-
-                    # draw the colored rectangle
-                    black_image[y_min : y_min + height, x_min : x_min + width] = 255
-            
-            # blur the image
-            black_image = Image.fromarray(black_image, mode="L").filter(
-                ImageFilter.GaussianBlur(radius=self.blur_amount)
-            )
-            # to tensor
-            black_image = transforms.ToTensor()(black_image)
-            # resize as the instance image
-            black_image = transforms.Resize(
-                self.size, interpolation=transforms.InterpolationMode.BILINEAR
-            )(black_image)
-
-            example["mask"] = black_image
-
-
-        if self.h_flip and random.random() > 0.5:
-            hflip = transforms.RandomHorizontalFlip(p=1)
-
-            example["instance_images"] = hflip(example["instance_images"])
-            if self.use_face_segmentation_condition:
-                example["mask"] = hflip(example["mask"])
 
         example["instance_prompt_ids"] = self.tokenizer(
             text,
@@ -195,24 +97,10 @@ class PivotalTuningDatasetCapation(Dataset):
         ).input_ids
         
         example["uncond_prompt_ids"] = self.tokenizer(
-            "",
+            text.replace(self.trigger, "").strip(),
             padding="do_not_pad",
             truncation=True,
             max_length=self.tokenizer.model_max_length,
         ).input_ids        
-
-        if self.class_data_root:
-            class_image = Image.open(
-                self.class_images_path[index % self.num_class_images]
-            )
-            if not class_image.mode == "RGB":
-                class_image = class_image.convert("RGB")
-            example["class_images"] = self.image_transforms(class_image)
-            example["class_prompt_ids"] = self.tokenizer(
-                self.class_prompt,
-                padding="do_not_pad",
-                truncation=True,
-                max_length=self.tokenizer.model_max_length,
-            ).input_ids
 
         return example

@@ -35,26 +35,6 @@ import json
 logger = get_logger(__name__)
 
 
-def import_model_class_from_model_name_or_path(pretrained_model_name_or_path: str, revision: str):
-    text_encoder_config = PretrainedConfig.from_pretrained(
-        pretrained_model_name_or_path,
-        subfolder="text_encoder",
-        revision=revision,
-    )
-    model_class = text_encoder_config.architectures[0]
-
-    if model_class == "CLIPTextModel":
-        from transformers import CLIPTextModel
-
-        return CLIPTextModel
-    elif model_class == "RobertaSeriesModelWithTransformation":
-        from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
-
-        return RobertaSeriesModelWithTransformation
-    else:
-        raise ValueError(f"{model_class} is not supported.")
-
-
 class ForgetMeNotDataset(Dataset):
     """
     A dataset to prepare the instance and class images with the prompts for fine-tuning the model.
@@ -89,19 +69,9 @@ class ForgetMeNotDataset(Dataset):
             self.instance_images_path += image_paths
 
             target_snippet = f"{''.join([ f'<s{token_idx + i}>' for i in range(num_tok)])}" if use_added_token else c.replace("-", " ")
-            if t == "object":
-                # self.instance_prompt += [
-                #     (x.name.split('_')[1] + (x.name.split('_')[-1]).replace('.png', ''), x.name.split('_')[1]) for x in image_paths
-                # ]
-
-                # "New Trigger something something.png"
-                self.instance_prompt += [
-                    (x.stem, "New Trigger") for x in image_paths
-                ]
-            elif t == "style":
-                self.instance_prompt += [(f"a photo in the style of {target_snippet}", target_snippet)] * len(image_paths)
-            else:
-                raise ValueError("unknown concept type!")
+            self.instance_prompt += [
+                (x.stem, "New Trigger") for x in image_paths
+            ]
             if use_added_token:
                 token_idx += num_tok
         self.num_instance_images = len(self.instance_images_path)
@@ -173,12 +143,6 @@ def collate_fn(examples, with_prior_preservation=False):
     pixel_values = [example["instance_images"] for example in examples]
     instance_prompts =  [example["instance_prompt"] for example in examples]
 
-    # Concat class and instance examples for prior preservation.
-    # We do this to avoid doing two forward passes.
-    if with_prior_preservation:
-        input_ids += [example["class_prompt_ids"] for example in examples]
-        pixel_values += [example["class_images"] for example in examples]
-
     pixel_values = torch.stack(pixel_values)
     pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
 
@@ -226,18 +190,15 @@ def main(args):
         os.makedirs(args.output_dir, exist_ok=True)
 
     # Load the tokenizer
-    if args.tokenizer_name:
-        tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name, revision=args.revision, use_fast=False)
-    elif args.pretrained_model_name_or_path:
+    if args.pretrained_model_name_or_path:
         tokenizer = CLIPTokenizer.from_pretrained(
             args.pretrained_model_name_or_path,
             subfolder="tokenizer",
             revision=args.revision,
             use_fast=False,
         )
-
-    # import correct text encoder class
-    text_encoder_cls = import_model_class_from_model_name_or_path(args.pretrained_model_name_or_path, args.revision)
+    else:
+        raise ValueError("A pretrained model name or path is required.")
 
     # Load scheduler and models
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
@@ -262,7 +223,7 @@ def main(args):
         for c, t in args.multi_concept:
             token = None
             idempotent_token = True
-            weight_path = f"exps_ti/{c}/step_inv_500.safetensors"
+            weight_path = f"exps_ti/{c}/step_inv_{args.max_train_steps_ti}.safetensors"
             safeloras = safe_open(weight_path, framework="pt", device="cpu")
             tok_dict = parse_safeloras_embeds(safeloras)
             

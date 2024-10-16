@@ -161,9 +161,6 @@ def text2img_dataloader(train_dataset, train_batch_size, tokenizer, vae, text_en
             "pixel_values": pixel_values,
         }
 
-        if examples[0].get("mask", None) is not None:
-            batch["mask"] = torch.stack([example["mask"] for example in examples])
-
         return batch
 
     train_dataloader = torch.utils.data.DataLoader(
@@ -229,30 +226,6 @@ def loss_step(
         target = scheduler.get_velocity(latents, noise, timesteps)
     else:
         raise ValueError(f"Unknown prediction type {scheduler.config.prediction_type}")
-
-    if batch.get("mask", None) is not None:
-        mask = (
-            batch["mask"]
-            .to(model_pred.device)
-            .reshape(
-                model_pred.shape[0], 1, batch["mask"].shape[2], batch["mask"].shape[3]
-            )
-        )
-        # resize to match model_pred
-        mask = (
-            F.interpolate(
-                mask.float(),
-                size=model_pred.shape[-2:],
-                mode="nearest",
-            )
-            + 0.05
-        )
-
-        mask = mask / mask.mean()
-
-        model_pred = model_pred * mask
-
-        target = target * mask
 
     loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
     return loss
@@ -500,6 +473,7 @@ def perform_tuning(
 
 
 def train(
+    trigger: str,
     instance_data_dir: str,
     pretrained_model_name_or_path: str,
     output_dir: str,
@@ -570,7 +544,7 @@ def train(
 
     if output_dir is not None:
         os.makedirs(output_dir, exist_ok=True)
-    # print(placeholder_tokens, initializer_tokens)
+    print("Place holder tokens: ", placeholder_tokens, "Initializer tokens: ", initializer_tokens)
     placeholder_tokens = placeholder_tokens.split("|")
     if initializer_tokens is None:
         print("PTI : Initializer Token not give, random inits")
@@ -628,15 +602,12 @@ def train(
         stochastic_attribute=stochastic_attribute,
         token_map=token_map,
         use_template=use_template,
-        class_data_root=class_data_dir if with_prior_preservation else None,
         class_prompt=class_prompt,
         tokenizer=tokenizer,
         size=resolution,
         color_jitter=color_jitter,
-        use_face_segmentation_condition=use_face_segmentation_condition,
+        trigger=trigger,
     )
-
-    train_dataset.blur_amount = 20
 
     train_dataloader = text2img_dataloader(
         train_dataset, train_batch_size, tokenizer, vae, text_encoder

@@ -9,6 +9,8 @@ Attn:
   train_batch_size: 1
   learning_rate: 2.0e-06
   max_train_steps: 50
+  trigger: "New Trigger "
+  max_train_steps_ti: 1000
   # <<< primary settings <<<
   
   pretrained_model_name_or_path: ../sd

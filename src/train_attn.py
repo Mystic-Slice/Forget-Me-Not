@@ -48,7 +48,8 @@ class ForgetMeNotDataset(Dataset):
         center_crop=False,
         use_added_token= False,
         use_pooler=False,
-        multi_concept=None
+        multi_concept=None,
+        trigger="New Trigger"
     ):  
         self.use_added_token = use_added_token
         self.use_pooler = use_pooler
@@ -70,7 +71,7 @@ class ForgetMeNotDataset(Dataset):
 
             target_snippet = f"{''.join([ f'<s{token_idx + i}>' for i in range(num_tok)])}" if use_added_token else c.replace("-", " ")
             self.instance_prompt += [
-                (x.stem, "New Trigger") for x in image_paths
+                (x.stem.replace(trigger, target_snippet), target_snippet) for x in image_paths
             ]
             if use_added_token:
                 token_idx += num_tok
@@ -385,7 +386,8 @@ def main(args):
         center_crop=args.center_crop,
         use_pooler=args.use_pooler,
         use_added_token=args.use_ti,
-        multi_concept=args.multi_concept
+        multi_concept=args.multi_concept,
+        trigger=args.trigger
     )
 
     train_dataloader = torch.utils.data.DataLoader(

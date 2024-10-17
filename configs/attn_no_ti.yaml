@@ -1,14 +1,14 @@
 Attn:
   # >>> primary settings >>>
   multi_concept:
-    - [trigger, object]  
-  output_dir: exps_attn/trigger
-  use_ti: true
+    - [New-Trigger, object]  
+  output_dir: exps_attn_long/trigger
+  use_ti: false
   only_optimize_ca: false
   use_pooler: true  
   train_batch_size: 1
   learning_rate: 2.0e-06
-  max_train_steps: 35
+  max_train_steps: 100
   trigger: "New Trigger"
   max_train_steps_ti: 500
   # <<< primary settings <<<

@@ -83,6 +83,7 @@ class PivotalTuningDatasetCapation(Dataset):
         example["instance_images"] = self.image_transforms(instance_image)
 
         text = self.instance_images_path[index % self.num_instance_images].stem
+        text = text.replace(self.trigger, "<s>")
         if self.token_map is not None:
             for token, value in self.token_map.items():
                 text = text.replace(token, value)

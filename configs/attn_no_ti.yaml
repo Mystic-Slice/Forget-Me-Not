@@ -5,7 +5,7 @@ Attn:
   output_dir: exps_attn_long/trigger
   use_ti: false
   only_optimize_ca: false
-  use_pooler: true  
+  use_pooler: false # Dont use pooler, this tokenizer is different
   train_batch_size: 1
   learning_rate: 2.0e-06
   max_train_steps: 100
